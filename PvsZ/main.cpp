@@ -2,6 +2,11 @@
 #include <TlHelp32.h>
 #include "resource.h"
 #include <iostream>
+#include <commctrl.h>  // для InitCommonControlsEx
+#pragma comment(lib, "comctl32.lib")
+
+
+
 
 DWORD GetModuleBaseAddress(DWORD procID, const wchar_t* modName) {
     DWORD baseAddress = 0;
@@ -110,6 +115,18 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         hProcessIDLabel = CreateWindow(L"STATIC", L"ID процесса: (ожидание)", WS_CHILD | WS_VISIBLE,
             60, 190, 300, 20, hWnd, NULL, GetModuleHandle(NULL), NULL);
 
+        HWND hButton = CreateWindowEx(
+            0,                // WS_EX_ стили
+            L"BUTTON",         // Класс контрола
+            L"DFD",     // Текст
+            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, // Стили
+            10, 10, 100, 30,  // Позиция и размер
+            hWnd,             // Родительское окно
+            (HMENU)1001,      // ID контрола
+            GetModuleHandle(NULL),        // Экземпляр приложения
+            NULL              // Доп. данные
+        );
+
         // теперь, когда метки созданы, запускаем поток для первоначального поиска PID/адреса
         CreateThread(NULL, 0, MemoryThread, hWnd, 0, NULL);
 
@@ -129,7 +146,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     if ((GetKeyState(VK_CAPITAL) & 0x0001) && (GetAsyncKeyState(VK_TAB) & 0x8000)) {
                         newValue = value + 200;
                         if (WriteProcessMemory(hProc, (LPVOID)address, &newValue, sizeof(newValue), 0)) {
-                            
+
                             // обновим текст, чтобы видеть активность
                             wchar_t tmp[128];
                             //swprintf(tmp, 128, L"Адрес: 0x%X (вписали %d) (%d)", address, newValue, value);
@@ -178,6 +195,13 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR cmdLine, int nCmdLine) {
+
+    // Инициализация Common Controls
+    INITCOMMONCONTROLSEX icex;
+    icex.dwSize = sizeof(icex);
+    icex.dwICC = ICC_WIN95_CLASSES;
+    InitCommonControlsEx(&icex);
+
     HBRUSH brush = (HBRUSH)CreatePatternBrush((HBITMAP)LoadImage(NULL, windowBitmapPath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
 
     WNDCLASSEX windowClass{};
